@@ -20,42 +20,34 @@ class NewsReport(object):
             this function prints the most popular three articles of all time
         """
 
-        conn = psycopg2.connect(self.connection_string)
-        cur = conn.cursor()
-        query = ("select articles.title, count(log.path) as views from log"
-                 " join"
-                 " articles on log.path = concat('/article/',articles.slug)"
-                 " group by articles.title order by views limit 3")
-        cur.execute(query)
-        articles = cur.fetchall()
+        query = ("""SELECT articles.title, COUNT(log.path) AS views
+                    FROM log
+                    join articles
+                    ON log.path = concat('/article/',articles.slug)
+                    GROUP BY articles.title
+                    ORDER BY views DESC LIMIT 3""")
+        articles = self.execute_query(query)
         print("{:^60}".format("Most popular articles of all time"))
-        for article in articles:
-            print("{:<30} - {:>15} views".format(article[0], article[1]))
+        for title, views in articles:
+            print("{:<30} - {:>15} views".format(title, views))
         print("")
-        cur.close()
-        conn.close()
 
     def get_popular_author_by_article(self):
         """
             this method prints the most popular article authors of all time
         """
 
-        conn = psycopg2.connect(self.connection_string)
-        cur = conn.cursor()
-        query = ("select authors.name, count(articles.title) as views"
-                 " from authors"
-                 " join articles on authors.id = articles.author "
-                 " left join log"
-                 " on log.path = concat('/article/',articles.slug)"
-                 " group by authors.name order by views desc")
-        cur.execute(query)
-        authors = cur.fetchall()
+        query = ("""SELECT authors.name, COUNT(articles.title) AS views
+                    FROM authors
+                    JOIN articles ON authors.id = articles.author
+                    LEFT JOIN log
+                    ON log.path = concat('/article/',articles.slug)
+                    GROUP BY authors.name ORDER BY views DESC""")
+        authors = self.execute_query(query)
         print("{:^65}".format("Most popular authors by articles of all time"))
-        for author in authors:
-            print("{:<30} - {:>20} views".format(author[0], author[1]))
+        for name, views in authors:
+            print("{:<30} - {:>20} views".format(name, views))
         print("")
-        cur.close()
-        conn.close()
 
     def get_logged_failed_request(self):
         """
@@ -63,23 +55,39 @@ class NewsReport(object):
             of requests lead to errors
         """
 
-        conn = psycopg2.connect(self.connection_string)
-        cur = conn.cursor()
-        query = ("select error_date, error_log_count, "
-                 "((cast(error_log_count as FLOAT)"
-                 " / cast(log_count as FLOAT)) * 100) as errors "
-                 "from error_log_view join"
-                 " log_view on error_date = date and "
-                 "((cast(error_log_count as FLOAT) / "
-                 "  cast(log_count as FLOAT)) * 100) > 1")
-        cur.execute(query)
-        logs = cur.fetchall()
+        query = ("""SELECT error_date, error_log_count,
+                    ((cast(error_log_count as FLOAT)
+                    / cast(log_count as FLOAT)) * 100) AS errors
+                    FROM error_log_view
+                    JOIN log_view
+                    ON error_date = date AND
+                    ((cast(error_log_count as FLOAT) /
+                    cast(log_count as FLOAT)) * 100) > 1""")
+        logs = self.execute_query(query)
         print("{:^40}".format("Request errors log by date"))
         for log in logs:
             print("{:<20} - {:>9}% errors".format(log[0].strftime("%B %d, %Y"),
                   round(log[2], 1)))
-        cur.close()
-        conn.close()
+
+    def execute_query(self, query):
+        """execute_query takes an SQL query as a parameter,
+            executes the query and returns the results as a list of tuples.
+           args:
+            query - (string) an SQL query statement to be executed.
+
+           returns:
+            A list of tuples containing the results of the query.
+        """
+        try:
+            conn = psycopg2.connect(self.connection_string)
+            cur = conn.cursor()
+            cur.execute(query)
+            result = cur.fetchall()
+            cur.close()
+            conn.close()
+            return result
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
 
 if __name__ == "__main__":
 

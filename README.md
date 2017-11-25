@@ -1,10 +1,10 @@
 # Logs Analysis Project
 
-*This project sets up a mock PostgreSQL database for a fictional news website, assuming the frontend user-facing side and backend has been built,
+This project sets up a mock PostgreSQL database for a fictional news website, assuming the frontend user-facing side and backend has been built,
 and it is up and running. The provided Python script uses the psycopg2 library to query the database and produce a report that answers the following three questions:
-    * Most popular three articles of all time
-    * The most popular article authors of all time
-    * The days that more than 1% of requests lead to errors
+* Most popular three articles of all time
+* The most popular article authors of all time
+* The days that more than 1% of requests lead to errors
 
 ## Requirement
 * PostgreSQL database server
